@@ -1,0 +1,720 @@
+---
+title: "Nonparametric Statistics Simulation"
+author: "Group F"
+date: "1/10/2022"
+output:
+  rmdformats::readthedown:
+    self_contained: yes
+    thumbnails: yes
+    lightbox: yes
+    gallery: yes
+    highlight: tango
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 前言
+
+### 主軸｜
+
+比較有母數檢定與無母數檢定的差異。
+
+
+### 有母數統計｜
+
+已知母體分配形式（通常假設已知母體為常態分配），僅有幾個未知待推論的母數。
+
+
+### 無母數統計｜
+
+最大特色為分配自由化，不必假設母體分配為任何特定分配，故對於任意母數分配而言，非母數統計方法皆適用。
+
+
+### 目的｜
+
+透過模擬幫助未來判斷應用何種方式進行檢定。
+
+
+# 文獻回顧
+
+* 文獻提及t-test對於母體常態分配假設相當穩健（robust），即便母體稍有偏離常態分配，t-test仍然適用。
+
+
+* 縱然檢定方法對於某些前提假設條件背離時仍穩健，只能保證型一錯誤率約略與我們所設定的顯著水準相去不遠，但並不保證此檢定方法的檢定力仍強，故從檢定力的觀點而言，母數方法的前提假設若不能滿足（尤其是母數常態的假設），應考慮檢定力較強的無母數方法。
+
+差異 | 有母數統計  | 無母數統計
+------------- | ------------- | -------------
+統計推論對象 | 推論母數，如：期望值、變異數 |  直接推論母體分配型態本身或母體分配位置，而不透過母數
+適用之變數資料型態 | 屬量變數為主 | 類別變數或順序等級，屬量變數應分組成類別變數或排序成順序等級
+所需前提假設 | 較強，通常假定常態分配或大樣本 | 較少，不用假定母體為特定分配
+適用範圍 | 假設多、較嚴格，應用於較少的問題上 | 假設少，可應用於較廣的問題
+檢定力 | 母體分配滿足母數方法中的特定假設時，檢定力較強 | 母體分配不滿足母數方法中的特定假設時，檢定力較強
+特色 | 母體分配偏離常態、更瘦尾（lighter tail），如均勻分配或問卷調查一至五的選項之分配，t-test不但穩健，其檢定力仍強 | 母體分配偏離常態、更肥尾（heavier tail），如指數分配、對數常態、卡方分配、有嚴重離群值存在的情況下無母數方法檢定力較強
+
+A heavy tailed distribution has a tail that’s heavier than an exponential distribution (Bryson, 1974).
+
+
+# 研究方法
+
+## 選擇檢定
+
+Ho: $\mu_1=\mu_2$
+
+Ha: $\mu_1\neq\mu_2$
+
+$\alpha=0.05$
+
+* 有母數檢定 - T test
+
+    + 一般研究設計，常使用樣本平均數對母體平均數做假設檢定(單一獨立樣本檢定)，或是藉由實驗組與對照組視為兩母群體樣本，並使用其樣本平均數進行假設檢定(兩獨立樣本檢定)；當母體之變異數未知時，藉由t值換算與對照「t分佈表」，以判定統計量是否落在拒絕區域。
+
+    + 前提假設：常態、非常態需大樣本
+
+
+* 無母數檢定 - Wilcoxon rank sum test
+
+    + 計算兩樣本的差
+
+    + 將兩樣本差的絕對值進行排序
+
+    + 將排序位標上正負符號，並將所有符號序(標上正負符號的排序值)進行加總，將得到兩個檢定量w(一正一負)
+
+    + 以w值(絕對值)大的進行作檢定
+
+    + 此檢定方法不但可以考慮到差異值的正負號，也同時考慮到差異值的大小。原理是如果虛無假設成立，那麼W應該是接近0。
+
+    + 前提假設：獨立、兩者分配相同但位置不同
+
+
+## 觀察現象
+
+控制顯著水準alpha下，比較
+
+1. 不同母體
+
+2. 不同樣本數
+
+在有母數檢定與無母數檢定的檢定力（power）
+
+補充說明：
+
+需要建立公平的比較基準
+
+在比較兩個方法的Power時，我們需要在Ha為真的情況，也就是$\mu_1\neq\mu_2$。在設定$\mu_1\neq\mu_2$時，我們以$\mu_2-\mu_1=k$來調整。為了在不同Population之下公平的比較power, 我們的k值以標準差為衡量，從0.1倍標準差開始到一倍標準差，一次改變0.1倍標準差。
+
+```{r}
+par(mfrow=c(1,2))
+
+curve(dnorm(x), from=-5, to=5, col=1,
+      main="Normal, k=1, sd=1", ylab="density")
+curve(dnorm(x, mean=0+1), from=-5, to=5, col=2, add=T)
+
+curve(dgamma(x, 2, rate=0.1), from=-5, to=70, col=1,
+      main="Gamma, k=1, sd=200", ylab="density")
+curve(dgamma(x-1, 2, rate=0.1), from=-5, to=70, col=2, add=T)
+```
+
+
+## 選擇母體
+
+### 1.Normal
+
+有母數檢定：未違反假設
+
+無母數檢定：未違反假設
+
+### 2.Uniform
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+
+### 3.Exponential
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+
+### 4.Gamma
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+
+### 5.Gamma with different shape
+
+#### 5.1 Gamma (small shape)
+
+#### 5.2 Gamma (large shape)
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：違反假設（兩者分配相同但位置不同）
+
+```{r}
+# Gamma with different shape
+# Ho is true
+curve(dgamma(x, 10, rate=0.5), from=-1, to=50, col=1,
+      main="Gamma, Ho is true with different shape", ylab="density", ylim=c(0,0.2))
+curve(dgamma(x, 2, rate=0.5), from=-1, to=50, col=2, add=T)
+legend("topright", c("P1: Gamma(10, 0.5)","P2: Gamma(2, 0.5)"),
+       col=c(1,2), lty=1)
+abline(v=20, col=1, lty=3)
+abline(v=4, col=2, lty=3)
+```
+
+Gamma的偏態係數為2/sqrt(shape)，alpha越小越偏
+```{r class.source = 'fold-show'}
+2/sqrt(10) # Gamma(10, 0.5)
+2/sqrt(2) # Gamma(2, 0.5)
+```
+
+
+## 模擬步驟
+
+1. 觀察不同分配之PDF, QQ plot
+
+2. 生成隨機樣本
+
+3. 進行檢定
+
+4. 確定alpha穩定
+
+5. 比較power
+
+
+# 研究結果
+
+Install packages
+```{r, eval=FALSE}
+library(randtests)
+library(RVAideMemoire)
+library(ggplot2)
+library(reshape2)
+```
+
+## 建立函式
+
+tail (method, n=10000, mean=0, sd=1, a=0, b=1, shape=2, rate=0.5, plot=F)
+```{r}
+tail <- function(method,n=10000, mean=0, sd=1, a=0, b=1, shape=2, rate=0.5, plot=F) {
+  x<-c()
+      if (method=="Normal"){
+        x<-rnorm(n) 
+      }
+      else if (method=="Uniform"){
+        x<-runif(n, min=a, max=b) 
+      }
+      else if (method=="Exp"){
+        x<-rexp(n, rate=rate) 
+      }
+      else if (method=="Gamma"){
+        x<-rgamma(n, shape=shape, rate=rate) 
+      }
+      else {
+        print("Error")
+        break
+      }
+  qqnorm(x)
+  qqline(x)
+}
+```
+
+alpha (method, B, n=10, mean=0, sd=1, a=0, b=1, shape=2, rate=0.5, plot=F)
+```{r}
+# method = Normal, Uniform, Exp, Gamma
+alpha <- function(method, B, n=10, mean=0, sd=1, a=0, b=1, shape=2, rate=0.5, plot=F) {
+  alpha<-0.05
+  x<-c()
+  y<-c()
+  t.pv<-c()
+  Wilcox.pv<-c()
+  alpha_t<-c()
+  alpha_Wilcox<-c()
+  
+  for(j in 1:length(B)){
+    for(i in 1:B[j]){
+      if (method=="Normal"){
+        x<-rnorm(n) 
+        y<-rnorm(n)
+      }
+      else if (method=="Uniform"){
+        x<-runif(n, min=a, max=b) 
+        y<-runif(n, min=a, max=b)
+      }
+      else if (method=="Exp"){
+        x<-rexp(n, rate=rate) 
+        y<-rexp(n, rate=rate)
+      }
+      else if (method=="Gamma"){
+        x<-rgamma(n, shape=shape, rate=rate) 
+        y<-rgamma(n, shape=shape, rate=rate)
+      }
+      else {
+        print("Error")
+        break
+      }
+      myt<-t.test(x,y)
+      t.pv[i]<-myt$p.value
+      Wilcox.pv[i] <- wilcox.test(x, y, exact = FALSE)$p.value
+    }
+    alpha_t[j] <- mean(t.pv<alpha)
+    alpha_Wilcox[j]<-mean(Wilcox.pv<alpha)
+  }
+  if (plot==T){
+    plot(x=B, y=alpha_t, ylim=c(0, 0.2), ylab="alpha",
+         main=as.character(method), pch=16, col=2)
+    points(x=B, y=alpha_Wilcox, pch=16, col=3)
+    abline(h=0.05)
+    legend("topright", c("T-test","Wilcoxon"), col=c(2,3), pch=16)
+  }
+}
+```
+
+kgen (v)
+```{r}
+kgen <- function(v){
+    kgen <- c()
+    for (i in 1:10){
+      kgen[i] <- 0.1*i*v 
+    }
+    return(kgen)
+}
+```
+
+normal_power (n, B, v) 
+```{r}
+# Normal
+normal_power <- function(n, B, v) {
+  alpha<-0.05
+  t.pv<-c()
+  Wilcox.pv<-c()
+  k<-kgen((v)^(1/2)) 
+  power_t<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  power_Wilcox<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  for(l in 1:length(n)){
+    for(j in 1:length(k)){
+      for(i in 1:B){
+        x<-rnorm(n[l])
+        y<-rnorm(n[l],mean=0+k[j])
+        myt<-t.test(x,y)
+        t.pv[i]<-myt$p.value
+        Wilcox.pv[i] <- wilcox.test(x, y, exact = FALSE)$p.value
+      }
+      power_t[j,l] <- mean(t.pv<alpha)
+      power_Wilcox[j,l]<-mean(Wilcox.pv<alpha)
+    }
+  }
+
+  par(mfrow=c(1,2))
+  require(ggplot2)
+  require(reshape2)
+  df <- data.frame(k = k,ttest = power_t,wilcoxtest = power_Wilcox)
+  df <- melt(df ,  id.vars = 'k', variable.name = 'method')
+  df$color=c(rep("t test",times=20),rep("wilcox test",times=20))
+  df$shape=rep(c(rep("n=10",times=10),rep("n=30",times=10)),times=2)
+  qplot(data = df, 
+          y = value, 
+          x = k, color=color,ylim=c(0,1),
+          main=paste('N(0,1) with different k, B=',B,sep=""),
+          ylab = "power")+geom_point(aes(shape=shape),size=3)
+}
+```
+
+unif_power (n, B, a, b)
+```{r}
+# Uniform
+unif_power <- function(n, B, a, b) {
+  alpha<-0.05
+  t.pv<-c()
+  Wilcox.pv<-c()
+  k<-kgen((((b-a)^2)/12)^(1/2)) 
+  power_t<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  power_Wilcox<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  for(l in 1:length(n)){
+    for(j in 1:length(k)){
+      for(i in 1:B){
+        x<-runif(n[l], a, b)
+        y<-runif(n[l], min=a+k, max=k[j]+b)
+        myt<-t.test(x,y)
+        t.pv[i]<-myt$p.value
+        Wilcox.pv[i] <- wilcox.test(x, y, exact = FALSE)$p.value
+      }
+      power_t[j,l] <- mean(t.pv<alpha)
+      power_Wilcox[j,l]<-mean(Wilcox.pv<alpha)
+    }
+  }
+  par(mfrow=c(1,2))
+  require(ggplot2)
+  require(reshape2)
+  df <- data.frame(k = k,ttest = power_t,wilcoxtest = power_Wilcox)
+  df <- melt(df ,  id.vars = 'k', variable.name = 'method')
+  df$color=c(rep("t test",times=20),rep("wilcox test",times=20))
+  df$shape=rep(c(rep("n=10",times=10),rep("n=30",times=10)),times=2)
+  qplot(data = df, 
+          y = value, 
+          x = k, color=color,ylim=c(0,1),
+          main=paste('Unif(a=',a,', b=',b,') with different k, B=',B,sep=""),
+          ylab = "power")+geom_point(aes(shape=shape),size=3)
+}
+```
+
+exp_power (n, B, b)
+```{r}
+# Exp
+# b is rate
+exp_power <- function(n, B, b) {
+  alpha<-0.05
+  t.pv<-c()
+  Wilcox.pv<-c()
+  k<-kgen((1*(b^-2))^(1/2)) 
+  power_t<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  power_Wilcox<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  for(l in 1:length(n)){
+    for(j in 1:length(k)){
+      for(i in 1:B){
+        x<-rgamma(n[l],shape =1 ,rate = b)
+        x<-x+k[j]
+        y<-rgamma(n[l],shape =1 ,rate = b)
+        myt<-t.test(x,y)
+        t.pv[i]<-myt$p.value
+        Wilcox.pv[i]<-wilcox.test(x, y, exact = FALSE)$p.value
+      }
+      power_t[j,l]<-mean(t.pv<alpha)
+      power_Wilcox[j,l]<-mean(Wilcox.pv<alpha)
+    }
+  }
+  par(mfrow=c(1,2))
+  require(ggplot2)
+  require(reshape2)
+  df <- data.frame(k = k,ttest = power_t,wilcoxtest = power_Wilcox)
+  df <- melt(df ,  id.vars = 'k', variable.name = 'method')
+  df$color=c(rep("t test",times=20),rep("wilcox test",times=20))
+  df$shape=rep(c(rep("n=10",times=10),rep("n=30",times=10)),times=2)
+  qplot(data = df, 
+          y = value, 
+          x = k, color=color,ylim=c(0,1),
+          main=paste('Exp(rate=',b,') with different k, B=',B,sep=""),
+          ylab = "power")+geom_point(aes(shape=shape),size=3)
+}
+```
+
+gamma_power (n, B, a, b)
+```{r}
+# Gamma 
+gamma_power <- function(n, B, a, b) {
+  alpha<-0.05
+  t.pv<-c()
+  Wilcox.pv<-c()
+  k<-kgen((a*(b^-2))^(1/2)) 
+  power_Wilcox<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  power_t<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  for(l in 1:length(n)){
+    for(j in 1:length(k)){
+      for(i in 1:B){
+        x<-rgamma(n[l],shape =a ,rate = b)
+        y<-x+k[j]
+        myt<-t.test(x,y)
+        t.pv[i]<-myt$p.value
+        Wilcox.pv[i] <- wilcox.test(x, y, exact = FALSE)$p.value
+      }
+      power_t[j,l] <- mean(t.pv<alpha)
+      power_Wilcox[j,l]<-mean(Wilcox.pv<alpha)
+    }
+  }
+  par(mfrow=c(1,2))
+  require(ggplot2)
+  require(reshape2)
+  df <- data.frame(k = k,ttest = power_t,wilcoxtest = power_Wilcox)
+  df <- melt(df ,  id.vars = 'k', variable.name = 'method')
+  df$color=c(rep("t test",times=20),rep("wilcox test",times=20))
+  df$shape=rep(c(rep("n=10",times=10),rep("n=30",times=10)),times=2)
+  qplot(data = df, 
+          y = value, 
+          x = k, color=color,ylim=c(0,1),
+          main=paste('Gamma(shape=',a,', rate=',b,') with different k, B=',B,sep=""),
+          ylab = "power")+geom_point(aes(shape=shape),size=3)
+}
+```
+
+gamma_diff_shape_power (n, B, a, b)
+```{r}
+# Gamma change shape (different meaning of k!!)
+gamma_diff_shape_power <- function(n, B, a, b) {
+  alpha<-0.05
+  t.pv<-c()
+  Wilcox.pv<-c()
+  k<-seq(0.1,3,0.3)
+  power_Wilcox<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  power_t<-data.frame(n10=c(rep(0,length(k))),n30=c(rep(0,length(k))))
+  for(l in 1:length(n)){
+    for(j in 1:length(k)){
+      for(i in 1:B){
+        x<-rgamma(n[l],shape =a ,rate = b)
+        y<-rgamma(n[l],shape =a+k[j] ,rate = b)
+        myt<-t.test(x,y)
+        t.pv[i]<-myt$p.value
+        Wilcox.pv[i] <- wilcox.test(x, y, exact = FALSE)$p.value
+      }
+      power_t[j,l] <- mean(t.pv<alpha)
+      power_Wilcox[j,l]<-mean(Wilcox.pv<alpha)
+    }
+  }
+  par(mfrow=c(1,2))
+  require(ggplot2)
+  require(reshape2)
+  df <- data.frame(k = k,ttest = power_t,wilcoxtest = power_Wilcox)
+  df <- melt(df ,  id.vars = 'k', variable.name = 'method')
+  df$color=c(rep("t test",times=20),rep("wilcox test",times=20))
+  df$shape=rep(c(rep("n=10",times=10),rep("n=30",times=10)),times=2)
+  qplot(data = df, 
+          y = value, 
+          x = k, color=color,ylim=c(0,1),
+          main=paste('Gamma(shape=',a,', rate=',b,') with different k, B=',B,sep=""),
+          ylab = "power")+geom_point(aes(shape=shape),size=3)
+}
+```
+
+
+## Shift Normal
+
+有母數檢定：未違反假設
+
+無母數檢定：未違反假設
+```{r}
+par(mfrow=c(1,2))
+
+curve(dnorm(x), from=-5, to=5, col=1,
+      main="Normal, Ha is true", ylab="density")
+curve(dnorm(x, mean=0+1), from=-5, to=5, col=2, add=T)
+legend("topright", c("Population 1","Population 2"),
+       col=c(1,2), lty=1)
+abline(v=0, col=1, lty=3)
+abline(v=1, col=2, lty=3)
+
+tail(method = "Normal")
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Normal", n=n, B=B, mean=0, sd=1, plot=T)
+```
+
+power
+```{r}
+normal_power(n=c(10,30), B=2000, v=1)
+```
+
+
+## Shift Uniform
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+```{r}
+par(mfrow=c(1,2))
+
+curve(dunif(x, 0, 1), from=-1, to=2, col=1,
+      main="Uniform, Ha is true", ylab="density")
+curve(dunif(x, 0+0.2886751, 1+0.2886751), from=-1, to=2, col=2, add=T)
+legend("topright", c("Population 1","Population 2"),
+       col=c(1,2), lty=1)
+abline(v=0.5, col=1, lty=3)
+abline(v=0.7886751, col=2, lty=3)
+
+tail(method = "Uniform")
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Uniform", n=n, B=B, a=0, b=1, plot=T)
+```
+
+power
+```{r}
+unif_power(n=c(10,30), B=2000, a=0, b=1)
+```
+
+
+## Shift Exponential
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+```{r}
+par(mfrow=c(1,2))
+
+curve(dexp(x, 1), from=-1, to=4, col=1,
+      main="Exp, Ha is true", ylab="density")
+curve(dexp(x-1, 1), from=-1, to=4, col=2, add=T)
+legend("topright", c("Population 1","Population 2"),
+       col=c(1,2), lty=1)
+abline(v=1, col=1, lty=3)
+abline(v=2, col=2, lty=3)
+
+tail(method = "Exp", rate = 1)
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Exp", n=n, B=B, rate=1)
+```
+
+power
+```{r}
+exp_power(n=c(10,30), B=10000, b=1)
+```
+
+
+## Shift Gamma
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：未違反假設
+```{r}
+par(mfrow=c(1,2))
+
+curve(dgamma(x, 2, rate=0.5), from=-1, to=20, col=1,
+      main="Gamma, Ha is true", ylab="density")
+curve(dgamma(x-2.828427, 2, rate=0.5), from=-1, to=20, col=2, add=T)
+legend("topright", c("Population 1","Population 2"),
+       col=c(1,2), lty=1)
+abline(v=4, col=1, lty=3)
+abline(v=4+2.828427, col=2, lty=3)
+
+tail(method = "Gamma")
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Gamma", n=n, B=B, shape=2, rate=0.5, plot=T)
+```
+
+power
+```{r}
+gamma_power(n=c(10,30), B=10000, a=2, b=0.5)
+```
+
+
+## Gamma with different shape
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：違反假設（兩者分配相同但位置不同）
+```{r}
+curve(dgamma(x, 10, rate=0.5), from=-1, to=50, col=1,
+      main="Gamma, Ho is true with different shape", ylab="density", ylim=c(0,0.2))
+curve(dgamma(x, 2, rate=0.5), from=-1, to=50, col=2, add=T)
+legend("topright", c("P1: Gamma(10, 0.5)","P2: Gamma(2, 0.5)"),
+       col=c(1,2), lty=1)
+abline(v=20, col=1, lty=3)
+abline(v=4, col=2, lty=3)
+```
+
+### Gamma with different shape (small shape)
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：違反假設（兩者分配相同但位置不同）
+```{r}
+par(mfrow=c(1,2))
+
+curve(dgamma(x, 2, rate=0.5), from=-1, to=20, col=1,
+      main="Gamma with small shape, Ha is true", ylab="density", ylim=c(0,0.2))
+curve(dgamma(x, 2+1, rate=0.5), from=-1, to=20, col=2, add=T)
+legend("topright", c("P1: Gamma(2, 0.5)","P2: Gamma(2+1, 0.5)"),
+       col=c(1,2), lty=1)
+abline(v=4, col=1, lty=3)
+abline(v=6, col=2, lty=3)
+
+tail(method = "Gamma", shape=2)
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Gamma", n=n, B=B, shape=2, rate=0.5, plot=T)
+```
+
+power
+```{r}
+gamma_diff_shape_power(n=c(10,30), B=10000, a=2, b=0.5)
+```
+
+
+### Gamma with different shape (large shape)
+
+有母數檢定：違反假設（非常態需大樣本）
+
+無母數檢定：違反假設（兩者分配相同但位置不同）
+```{r}
+par(mfrow=c(1,2))
+
+curve(dgamma(x, 10, rate=0.5), from=-1, to=50, col=1,
+      main="Gamma with large shape, Ha is true", ylab="density", ylim=c(0,0.2))
+curve(dgamma(x, 10+1, rate=0.5), from=-1, to=50, col=2, add=T)
+legend("topright", c("P1: Gamma(10, 0.5)","P2: Gamma(10+1, 0.5)"),
+       col=c(1,2), lty=1)
+abline(v=20, col=1, lty=3)
+abline(v=22, col=2, lty=3)
+
+tail(method = "Gamma", shape=10)
+```
+
+alpha
+```{r}
+n<-10
+B<-c(100,500,seq(1000,10000,1000))
+alpha("Gamma", n=n, B=B, shape=10, rate=0.5, plot=T)
+```
+
+power
+```{r}
+gamma_diff_shape_power(n=c(10,30), B=10000, a=10, b=0.5)
+```
+
+
+# 結論
+
+分配 | 特色 | 有母數檢定 T-test | 無母數檢定 Wilcoxon rank sum test
+------------- | ------------- | ------------- | -------------
+Normal | 對稱 | 勝 | 
+Uniform | 對稱、瘦尾 | 勝 | 
+Exponential | 肥尾 |  | 勝 
+Gamma | 肥尾 |  | 勝 
+Gamma (small shape) | 偏度較大 |  | 勝 
+Gamma (large shape) | 偏度較小 | 勝 | 
+
+# 工作分配
+
+侯登耀: 圖形繪製
+
+劉貞莉: 挑選母體,報告統整,上台報告
+
+周郁倫: 挑選母體,報告統整
+
+張倢琳: 參數變化(n,k)
+
+李佳璇: 圖形繪製
+
+蕭  堯: 設計function,上台報告
+
+譚昇雄: html製作
+
+郭沛辰: 圖形繪製
+
+韓伊晴: 參數變化(n,k)
+
+
